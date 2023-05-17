@@ -52,7 +52,7 @@ num_epochs = 3
 diz_loss = {'train_loss':[],'val_loss':[]}
 for epoch in range(num_epochs):
    train_loss = train_epoch(model,device,train_loader,loss_fn,optim)
-   val_loss = test_epoch(model,device,test_loader,loss_fn)
+   val_loss = test_epoch(model,device,valid_loader,loss_fn)
    diz_loss['train_loss'].append(train_loss)
    diz_loss['val_loss'].append(val_loss)
    plot_ae_outputs(model,diz_loss,device,test_dataset,test_targets , test_indices, key='MNIST', n=10)
