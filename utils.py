@@ -20,6 +20,7 @@ def plot_loss(train_loss_list, val_loss_list, epoch, save_dir):
     plt.title("Loss")
     plt.legend()
     plt.savefig(save_dir / "loss.png")
+    plt.show()
 
 def calculate_metrics(original, reconstructed):
     win_size = 7 if config['color_channel'] == 3 else 11
@@ -57,14 +58,13 @@ def plot_ae_outputs(model, test_dataset, save_dir, n=10):
             img = img.cpu().squeeze().numpy().transpose(1, 2, 0)
             rec_img = rec_img.cpu().squeeze().numpy().transpose(1, 2, 0)
 
+        plt.imshow(img)
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
 
         if i == n // 2:
             ax.set_title("Original images")
-            
-        plt.imshow(img)  # Display the original image
-        
+
         ax = plt.subplot(2, n, i + 1 + n)
         rec_img = np.clip(rec_img, 0, 1)
         rec_img = np.clip(rec_img, 0, 255)
@@ -74,6 +74,9 @@ def plot_ae_outputs(model, test_dataset, save_dir, n=10):
 
         if i == n // 2:
             ax.set_title("Reconstructed images")
+
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
             
         save_dir = Path(save_dir)
         save_path = save_dir / f"reconstructed_{i}.png"
@@ -86,5 +89,8 @@ def plot_ae_outputs(model, test_dataset, save_dir, n=10):
 
     plt.savefig(save_dir / "plot.png")
     plt.close()
+
+    print(f"Average PSNR: {np.mean(psnr_list):.2f}")
+    print(f"Average SSIM: {np.mean(ssim_list):.4f}")
 
     return np.mean(psnr_list), np.mean(ssim_list)
