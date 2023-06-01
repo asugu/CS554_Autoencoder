@@ -1,0 +1,11 @@
+network: BaseCAE
+dataset: MNISTDataset
+flatten_size: "64 * 7 * 7" # 64 * 7 * 7 for MNIST(BaseCAE) # 64 * 8 * 8 for CIFAR10(BaseCAE)
+color_channel: 1 # 1 for MNIST, 3 for CIFAR10
+hidden_dim: 256
+latent_dim: 128
+lr: 0.001
+batch_size: 256
+loss: MSE
+optimizer: Adam
+epoch: 25
