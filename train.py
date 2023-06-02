@@ -44,34 +44,31 @@ elif config['dataset'] == 'CIFAR10Dataset':
     
 batch_size = config['batch_size']
 lr = config['lr']
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("mps")
+device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
 train_loader = torch.utils.data.DataLoader(train, batch_size=batch_size, shuffle=True)
 test_loader = torch.utils.data.DataLoader(test, batch_size=batch_size, shuffle=True)
 logging.info(f"Selected device: {device}")
 logging.info(f"Batch Size: {batch_size}")
 
-# flatten pre_process
-flatten_size = config['flatten_size']
-dimensions = [int(dim.strip()) for dim in flatten_size.split('*')]
-tupled_flatten = tuple(dimensions)
-
-
 if config['network'] == 'BaseCAE':
-    model = BaseCAE(color_channel=config['color_channel'], flatten_size=eval(flatten_size), hidden_dim=config['hidden_dim'],
-                      latent_dim=config['latent_dim'], tupled_flatten=tupled_flatten)
+    model = BaseCAE(color_channel=config['color_channel'])
     model.to(device)
-    logging.info("Selected network: BaseCAE")
-    logging.info(f"Network flatten_size: {tupled_flatten} \nLatent Dim: {config['latent_dim']} \nHidden Dim: {config['hidden_dim']}")
 ## Add elif statements for additional networks
 
 
 if config['loss'] == 'MSE':
     criterion = nn.MSELoss()
     logging.info('Selected loss function: MSE')
+elif config['loss'] == 'BCE':
+    criterion = nn.BCELoss()
+    logging.info('Selected loss function: BCE')
+elif config['loss'] == 'L1':
+    criterion = nn.L1Loss()
+    logging.info('Selected loss function: L1')
 ### Add elif statements for additional losses
 
 if config['optimizer'] == 'Adam':
-    optimizer = torch.optim.Adam(params=model.parameters(),lr=lr, weight_decay=1e-5)
+    optimizer = torch.optim.Adam(params=model.parameters(), lr=lr, weight_decay=1e-5)
     logging.info("Selected Optimizer: Adam")
     logging.info(f"Learning Rate: {lr}")
 
