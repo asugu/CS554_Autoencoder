@@ -5,7 +5,10 @@ class BaseCAE(nn.Module):
     def __init__(self, color_channel, flatten_size, hidden_dim, latent_dim, tupled_flatten) -> None:
         super().__init__()
         self.encoder = nn.Sequential(
-            nn.Conv2d(color_channel, 32, 3, stride = 2 , padding = 1),
+            nn.Conv2d(color_channel, 16, 3, stride = 2 , padding = 1),
+            nn.BatchNorm2d(16),
+            nn.ReLU(True),
+            nn.Conv2d(16, 32, 3, stride=2, padding=1),
             nn.BatchNorm2d(32),
             nn.ReLU(True),
             nn.Conv2d(32, 64, 3, stride = 2, padding = 1),
@@ -25,10 +28,13 @@ class BaseCAE(nn.Module):
         )
         self.unflatten = nn.Unflatten(dim = 1, unflattened_size = tupled_flatten)
         self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(64, 32 , 3, stride=2, padding=1,output_padding=1),
-            nn.ReLU(True),
+            nn.ConvTranspose2d(64, 32, 3, stride=2, padding=1, output_padding=1), ## Add output_padding = 1 for CIFAR10, remove for MNIST
             nn.BatchNorm2d(32),
-            nn.ConvTranspose2d(32, color_channel, 3, stride=2, padding=1,output_padding=1)
+            nn.ReLU(True),
+            nn.ConvTranspose2d(32, 16 , 3, stride=2, padding=1,output_padding=1),
+            nn.ReLU(True),
+            nn.BatchNorm2d(16),
+            nn.ConvTranspose2d(16, color_channel, 3, stride=2, padding=1,output_padding=1)
         )
         
     def forward(self, x):
@@ -44,4 +50,4 @@ class BaseCAE(nn.Module):
         x = torch.sigmoid(x)
         return x
     
-        
+    
