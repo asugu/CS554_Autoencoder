@@ -34,11 +34,13 @@ logging.getLogger('matplotlib.font_manager').disabled = True
 if config['dataset'] == 'MNISTDataset':
     ds = MNISTDataset(root = './mnist')
     train = ds.train
+    val = ds.val
     test = ds.test
     logging.info("Selected Dataset: MNIST")
 elif config['dataset'] == 'CIFAR10Dataset':
     ds = CIFAR10Dataset(root = './cifar10')
     train = ds.train
+    val = ds.val
     test = ds.test
     logging.info("Selected Dataset: CIFAR10")
     
@@ -46,7 +48,8 @@ batch_size = config['batch_size']
 lr = config['lr']
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("mps")
 train_loader = torch.utils.data.DataLoader(train, batch_size=batch_size, shuffle=True)
-test_loader = torch.utils.data.DataLoader(test, batch_size=batch_size, shuffle=True)
+val_loader = torch.utils.data.DataLoader(val, batch_size=batch_size, shuffle=True)
+test_loader = torch.utils.data.DataLoader(test, batch_size=batch_size, shuffle=False)
 logging.info(f"Selected device: {device}")
 logging.info(f"Batch Size: {batch_size}")
 
@@ -62,7 +65,14 @@ if config['network'] == 'BaseCAE':
     model.to(device)
     logging.info("Selected network: BaseCAE")
     logging.info(f"Network flatten_size: {tupled_flatten} \nLatent Dim: {config['latent_dim']} \nHidden Dim: {config['hidden_dim']}")
+    
 ## Add elif statements for additional networks
+elif config['network'] == 'ImprovedCAE':
+    model = ImprovedCAE(color_channel=config['color_channel'], flatten_size=eval(flatten_size), hidden_dim=config['hidden_dim'],
+                      latent_dim=config['latent_dim'], tupled_flatten=tupled_flatten)
+    model.to(device)
+    logging.info("Selected network: ImprovedCAE")
+    logging.info(f"Network flatten_size: {tupled_flatten} \nLatent Dim: {config['latent_dim']} \nHidden Dim: {config['hidden_dim']}")
 
 
 if config['loss'] == 'MSE':
@@ -99,7 +109,7 @@ for epoch in range(EPOCH):
     with torch.no_grad():
         preds = []
         ys = []
-        for step, (batch, _) in enumerate(test_loader):
+        for step, (batch, _) in enumerate(val_loader):
             batch = batch.to(device)
             output = model(batch)
             preds.append(output.cpu())
