@@ -12,6 +12,7 @@ with open(config_file, 'r') as file:
 
 def plot_loss(train_loss_list, val_loss_list, epoch, save_dir):
     save_dir = Path(save_dir)
+    val_loss_list = np.array([item.cpu().item() for item in val_loss_list])
     plt.figure(figsize=(12, 8))
     plt.plot(epoch, train_loss_list, label="Train Loss", color="red")
     plt.plot(epoch, val_loss_list, label="Validation Loss", color="blue")
@@ -82,6 +83,46 @@ def plot_ae_outputs(model, test_dataset, save_dir, n=10):
         psnr_list.append(psnr)
         ssim_list.append(ssim)
 
+    plt.savefig(save_dir / "plot.png")
+    plt.close()
+
+    return np.mean(psnr_list), np.mean(ssim_list)
+
+def plot_ae_outputs_cinic(model, test_dataset, save_dir, n=10):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    fig, axes = plt.subplots(2, n, figsize=(16, 4.5))
+    fig.tight_layout(pad=0.3)
+
+    psnr_list = []
+    ssim_list = []
+
+    for i in range(n):
+        img, _ = test_dataset[i*10]
+        img = img.to(device).unsqueeze(0)
+        model.eval()
+
+        with torch.no_grad():
+            rec_img = model(img)
+
+        img = img.squeeze().cpu().numpy().transpose(1, 2, 0)
+        rec_img = rec_img.squeeze().cpu().numpy().transpose(1, 2, 0)
+
+        axes[0, i].imshow(img)
+        axes[0, i].axis('off')
+
+        axes[1, i].imshow(rec_img)
+        axes[1, i].axis('off')
+
+        # Calculate metrics
+        psnr, ssim = calculate_metrics(img, rec_img)
+        psnr_list.append(psnr)
+        ssim_list.append(ssim)
+
+    axes[0, n // 2].set_title("Original Images")
+    axes[1, n // 2].set_title("Reconstructed Images")
+
+    save_dir = Path(save_dir)
     plt.savefig(save_dir / "plot.png")
     plt.close()
 

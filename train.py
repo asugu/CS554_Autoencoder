@@ -8,7 +8,8 @@ import numpy as np
 
 from dataset import *
 from networks import *
-from utils import plot_ae_outputs, plot_loss
+from utils import plot_ae_outputs, plot_loss, plot_ae_outputs_cinic
+from losses import CombinedLoss
 
 
 config_file = 'config.yaml'
@@ -30,6 +31,7 @@ logging.basicConfig(filename = "results/" +save_location+'/log.log',
                     format=""
                     )
 logging.getLogger('matplotlib.font_manager').disabled = True
+logging.getLogger('PIL').setLevel(logging.WARNING)
 
 if config['dataset'] == 'MNISTDataset':
     ds = MNISTDataset(root = './mnist')
@@ -43,7 +45,14 @@ elif config['dataset'] == 'CIFAR10Dataset':
     val = ds.val
     test = ds.test
     logging.info("Selected Dataset: CIFAR10")
-    
+elif config['dataset'] == 'CINIC10Dataset':
+    ds = CINIC10Dataset(root = './cinic10')
+    train = ds.train
+    val = ds.val
+    test = ds.test
+    logging.info("Selected Dataset: CINIC10")
+
+
 batch_size = config['batch_size']
 lr = config['lr']
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("mps")
@@ -78,11 +87,30 @@ elif config['network'] == 'ImprovedCAE':
 if config['loss'] == 'MSE':
     criterion = nn.MSELoss()
     logging.info('Selected loss function: MSE')
-### Add elif statements for additional losses
-
+elif config['loss'] == 'L1':
+    criterion = nn.L1Loss()
+    logging.info('Selected loss L1')
+elif config['loss'] == 'BCE':
+    criterion = nn.BCELoss()
+    logging.info('Selected loss BCE')
+elif config['loss'] == 'Combined':
+    weight_mse, weight_l1 = 1.0, 0.5 ## give weights manually here 
+    criterion = CombinedLoss(weight_mse=weight_mse, weight_l1=weight_l1) 
+    logging.info(f"Selected loss combined with W_MSE {weight_mse} W_L1{weight_l1}")
+    
 if config['optimizer'] == 'Adam':
     optimizer = torch.optim.Adam(params=model.parameters(),lr=lr, weight_decay=1e-5)
     logging.info("Selected Optimizer: Adam")
+    logging.info(f"Learning Rate: {lr}")
+
+elif config['optimizer'] == 'RMS':
+    optimizer = torch.optim.RMSprop(params=model.parameters(),lr=lr, weight_decay=1e-5)
+    logging.info("Selected Optimizer: RMSProp")
+    logging.info(f"Learning Rate: {lr}")
+
+if config['optimizer'] == 'SGD':
+    optimizer = torch.optim.SGD(params=model.parameters(),lr=lr, weight_decay=1e-5)
+    logging.info("Selected Optimizer: SGD")
     logging.info(f"Learning Rate: {lr}")
 
 ## Add elif statements for additional optimizers
@@ -112,8 +140,8 @@ for epoch in range(EPOCH):
         for step, (batch, _) in enumerate(val_loader):
             batch = batch.to(device)
             output = model(batch)
-            preds.append(output.cpu())
-            ys.append(batch.cpu())
+            preds.append(output)
+            ys.append(batch)
         preds, ys = torch.cat(preds), torch.cat(ys)
         val_loss = criterion(preds, ys)
         validation_loss.append(val_loss.data)
@@ -121,7 +149,10 @@ for epoch in range(EPOCH):
     logging.info(
          f"Epoch: {epoch}, Train Loss: {mean_train_loss[epoch]:.4f}, Val Loss: {validation_loss[epoch]:.4f}"
     )
-avg_psnr, avg_ssim = plot_ae_outputs(model, test, "./results/" + save_location)
+if config['dataset'] != "CINIC10Dataset":
+     avg_psnr, avg_ssim = plot_ae_outputs(model, test, "./results/" + save_location)
+else:
+    avg_psnr, avg_ssim = plot_ae_outputs_cinic(model, test, "./results/" + save_location)
 logging.info(f"Average PSNR: {avg_psnr:.2f}")
 logging.info(f"Average SSIM: {avg_ssim:.4f}")
 plot_loss(mean_train_loss, validation_loss, np.linspace(0, EPOCH, EPOCH), "./results/" + save_location)

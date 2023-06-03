@@ -1,6 +1,27 @@
 import torch
 import torch.nn as nn
 
+# We did try using skip connections only inside the encoder but they did not improve the quality
+class ResidualBlock(nn.Module):
+    def __init__(self, in_channels):
+        super(ResidualBlock, self).__init__()
+        
+        self.conv1 = nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=1, padding=1)
+        self.relu = nn.ReLU(inplace=True)
+        self.conv2 = nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=1, padding=1)
+    
+    def forward(self, x):
+        identity = x
+        
+        out = self.conv1(x)
+        out = self.relu(out)
+        out = self.conv2(out)
+        
+        out += identity
+        out = self.relu(out)
+        
+        return out
+
 class BaseCAE(nn.Module):
     def __init__(self, color_channel, flatten_size, hidden_dim, latent_dim, tupled_flatten) -> None:
         super().__init__()
@@ -27,7 +48,7 @@ class BaseCAE(nn.Module):
         )
         self.unflatten = nn.Unflatten(dim = 1, unflattened_size = tupled_flatten)
         self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(64, 32, 3, stride=2, padding=1, output_padding=1), ## Add output_padding = 1 for CIFAR10, remove for MNIST
+            nn.ConvTranspose2d(64, 32, 3, stride=2, padding=1,output_padding=1), ## Add output_padding = 1 for CIFAR10, remove for MNIST
             nn.BatchNorm2d(32),
             nn.ReLU(True),
             nn.ConvTranspose2d(32, 16 , 3, stride=2, padding=1,output_padding=1),
@@ -82,12 +103,12 @@ class ImprovedCAE(nn.Module):
         )
         self.unflatten = nn.Unflatten(dim = 1, unflattened_size = tupled_flatten)
         self.dec1 = nn.Sequential(
-            nn.ConvTranspose2d(128, 64, 3, stride=1, padding=1), ## Add output_padding = 1 for CIFAR10, remove for MNIST
+            nn.ConvTranspose2d(128, 64, 3, stride=1, padding=1), 
             nn.BatchNorm2d(64),
             nn.LeakyReLU(True)
         )
         self.dec2 = nn.Sequential(
-            nn.ConvTranspose2d(64, 32, 3, stride=2, padding=1, output_padding=1), ## Add output_padding = 1 for CIFAR10, remove for MNIST
+            nn.ConvTranspose2d(64, 32, 3, stride=2, padding=1, output_padding=1),  ## Add output_padding = 1 for CIFAR10, remove for MNIST
             nn.BatchNorm2d(32),
             nn.LeakyReLU(True),
         )
@@ -112,14 +133,16 @@ class ImprovedCAE(nn.Module):
         # Decoder
         x = self.decoder_linear(x)
         x = self.unflatten(x)
-        # x = torch.cat((x, x3), dim=1)  
+        x = x4 + x
         x = self.dec1(x)
-        # x = torch.cat((x, x2), dim=1)  
+        x = x3 + x
         x = self.dec2(x)
-        # x = torch.cat((x, x1), dim=1)  
+        x + x2 + x
         x = self.dec3(x)
-        # x = torch.cat((x, x1), dim=1)
+        x = x1 + x
         x = self.dec4(x)
         x = torch.sigmoid(x)
         return x
     
+    
+

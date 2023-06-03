@@ -1,11 +1,11 @@
 network: ImprovedCAE
 dataset: CIFAR10Dataset
-save_location: "cifar10-improved-skip-v-4cnn-1fc"
+save_location: "test"
 flatten_size: "128 * 4 * 4" # 64 * 4 * 4 for MNIST(BaseCAE) # 64 * 4 * 4 for CIFAR10(BaseCAE)
 color_channel: 3 # 1 for MNIST, 3 for CIFAR10
 hidden_dim: 512
-latent_dim: 512
-lr: 0.0004
+latent_dim: 256
+lr: 0.001
 batch_size: 256
 loss: MSE
 optimizer: Adam
